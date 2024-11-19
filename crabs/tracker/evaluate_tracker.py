@@ -18,6 +18,7 @@ class TrackerEvaluate:
 
     def __init__(
         self,
+        input_video_file_root: str,
         gt_dir: str,  # annotations_file
         predicted_boxes_dict: dict,
         iou_threshold: float,
@@ -30,6 +31,8 @@ class TrackerEvaluate:
 
         Parameters
         ----------
+        input_video_file_root : str
+            Filename without extension to the input video file.
         gt_dir : str
             Directory path of the ground truth CSV file.
         predicted_boxes_dict : dict
@@ -45,6 +48,7 @@ class TrackerEvaluate:
             Path to the directory where the tracking output will be saved.
 
         """
+        self.input_video_file_root = input_video_file_root
         self.gt_dir = gt_dir
         self.predicted_boxes_dict = predicted_boxes_dict
         self.iou_threshold = iou_threshold
@@ -384,11 +388,16 @@ class TrackerEvaluate:
             "MOTA": [],
         }
 
-        for frame_number in sorted(ground_truth_dict.keys()):
+        for frame_index, frame_number in enumerate(
+            sorted(ground_truth_dict.keys())
+        ):
+            # assuming all frames have GT data
             gt_data_frame = ground_truth_dict[frame_number]
 
-            if frame_number < len(predicted_dict):
-                pred_data_frame = predicted_dict[frame_number]
+            if frame_number <= len(predicted_dict):
+                pred_data_frame = predicted_dict[
+                    frame_index
+                ]  # 0-based indexing
 
                 (
                     mota,
@@ -405,7 +414,9 @@ class TrackerEvaluate:
                     prev_frame_id_map,
                 )
                 mota_values.append(mota)
-                results["Frame Number"].append(frame_number)
+                results["Frame Number"].append(
+                    frame_number
+                )  # TODO: change to index!
                 results["Total Ground Truth"].append(total_gt)
                 results["True Positives"].append(true_positives)
                 results["Missed Detections"].append(missed_detections)
@@ -413,7 +424,9 @@ class TrackerEvaluate:
                 results["Number of Switches"].append(num_switches)
                 results["MOTA"].append(mota)
 
-        save_tracking_mota_metrics(self.tracking_output_dir, results)
+        save_tracking_mota_metrics(
+            self.tracking_output_dir, self.input_video_file_root, results
+        )
 
         return mota_values
 
